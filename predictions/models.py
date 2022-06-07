@@ -4,42 +4,27 @@ import os
 import numpy as np
 import copy
 from sklearn.metrics import accuracy_score
-
-
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM
 from tensorflow.keras.layers import GRU
-
 from tensorflow.keras.layers import Dense
 from tensorflow.keras.layers import Flatten
 import keras
 from keras.layers import Dropout
 from numpy import argmax
-
-
-# prepare data for lstm
+from sklearn.metrics import accuracy_score
 from pandas import read_csv
 from pandas import DataFrame
 from pandas import concat
 from sklearn.preprocessing import LabelEncoder
 from sklearn.preprocessing import MinMaxScaler
 from scipy.linalg import hankel
-
 from tensorflow.keras.utils import to_categorical
-
 import matplotlib.pyplot as plt
-import xgboost as xgb
+import xgboost as xgboost
 
 
-data = pd.read_csv('GME_data.csv')
-
-coments =  data['comments_num'].tolist()
-
-
-
-
-X = data['Adj Close']
 
 def LSTM_tuning(X,additional_data = None, lag = 30, layers = 2, train_ratio = 0.7):
 
@@ -109,9 +94,6 @@ def LSTM_tuning(X,additional_data = None, lag = 30, layers = 2, train_ratio = 0.
     y_train_norm = scaler.inverse_transform(train_data[lag:])
     y_test_norm = scaler.inverse_transform(test_data[lag:])
 
-    plt.plot(train_predict_norm)
-    plt.plot(y_train_norm)
-
     len(test_predict)
     
     def MSE(real,pred):
@@ -137,45 +119,6 @@ def LSTM_tuning(X,additional_data = None, lag = 30, layers = 2, train_ratio = 0.
 
     return np.concatenate(train_predict_norm).ravel().tolist(),np.concatenate(test_predict_norm).ravel().tolist() ,np.concatenate(y_train_norm).ravel().tolist() ,np.concatenate(y_test_norm).ravel().tolist() 
 
-
-
-
-
-def trading(b,real):
-
-    hodl = [100]*len(b)
-    for t in range(0, len(b)-1):
-        if (b[t]< b[t+1]):
-            hodl[t] = 1
-        elif (b[t]>= b[t+1]):
-            hodl[t] = 0
-
-
-    hodl[len(b)-1] = 0
-    #real = np.concatenate(real).ravel()
-    returns = copy.deepcopy(real)
-    for t in range (1,len(b)):
-        returns[t] = real[t]/real[t-1]
-
-    zakupaem = np.zeros(len(b))  
-    for t in range(1,(len(hodl))):
-
-        if (hodl[t-1] == 0) and (hodl[t]==1):
-           zakupaem[t-1] = -1
-        elif (hodl[t-1] == 1) and (hodl[t]==0):
-            zakupaem[t-1] = 1
-
-
-    result = np.zeros(len(b))
-    for t in range(1,(len(b))):
-        result[t] = zakupaem[t] * real[t]
-
-    summa = sum(result)
-    return summa
-
-
-
-additional_data = data[['comments_num', 'posts_num']]
 
 
 def LSTM_tuning_ud(X,additional_data = None, lag = 10, layers = 2, train_ratio = 0.7):
@@ -270,10 +213,7 @@ def LSTM_tuning_ud(X,additional_data = None, lag = 10, layers = 2, train_ratio =
 
     
 
-    return argmax(train_predict,axis=1), argmax(test_predict,axis=1) , argmax(y_train_bin,axis=1) , argmax(y_test_bin,axis=1)
-
-
-
+    return argmax(train_predict,axis=1), argmax(test_predict,axis=1) , argmax(y_train_bin,axis=1) , argmax(y_test_bin,axis=1), scores2[1]
 
 
 
@@ -334,7 +274,7 @@ def XGB_tuning_ud(X,additional_data = None, lag = 10, layers = 2, train_ratio = 
     X_train_bin = X_train_bin.reshape(X_train_bin.shape[0], X_train_bin.shape[1] * X_train_bin.shape[2])
     X_test_bin = X_test_bin.reshape(X_test_bin.shape[0], X_test_bin.shape[1] * X_test_bin.shape[2])
 
-    xgb_cl = xgb.XGBClassifier()
+    xgb_cl = xgboost.XGBClassifier()
     xgb_cl.fit(X_train_bin, y_train_bin)
 
     xgb_train_pred =  xgb_cl.predict(X_train_bin)
@@ -397,17 +337,14 @@ def XGB_tuning(X,additional_data = None, lag = 10, layers = 2, train_ratio = 0.7
 
     X_train.shape
 
-    xgb = xgb.XGBRegressor(n_estimators=1000)
-    xgb.fit(X_train, y_train)
+    xgb_lin = xgboost.XGBRegressor(n_estimators=1000)
+    xgb_lin.fit(X_train, y_train)
 
-    xgb_train_pred =  xgb.predict(X_train)
-
-
-    xgb_test_pred =  xgb.predict(X_test)
+    xgb_train_pred =  xgb_lin.predict(X_train)
 
 
-    plt.plot(test_predict_norm)
-    plt.plot(y_test_norm)
+    xgb_test_pred =  xgb_lin.predict(X_test)
+
 
     train_predict_norm = scaler.inverse_transform(xgb_train_pred.reshape(-1,1))
     test_predict_norm = scaler.inverse_transform(xgb_test_pred.reshape(-1,1))
@@ -422,17 +359,7 @@ def XGB_tuning(X,additional_data = None, lag = 10, layers = 2, train_ratio = 0.7
 
 
 
-    
-    
-xgb_train_pred, xgb_test_pred, y_train_bin, y_test_bin = XGB_tuning_ud(X, data[['comments_num', 'posts_num']])
-
-
-from sklearn.metrics import accuracy_score
-
-accuracy_score(xgb_test_pred, y_test_bin)
-
-
-def profit(xgb_test_pred, y_test_bin):
+def profit(xgb_test_pred, y_test_bin, X):
     real_prices = X.tolist()[-len(y_test_bin)-1:]
     real_prices_diff = np.diff(real_prices)
     bank = 0
@@ -443,24 +370,3 @@ def profit(xgb_test_pred, y_test_bin):
             bank += (real_prices_diff[t])
     return bank
     
-data = pd.read_csv('final_data/data_final_indicators.csv')
-
-X = data['Adj Close']
-
-
-_, y_test, _, y_pred =  LSTM_tuning(X,data[["comments_lm_pos", "comments_lm_neg"]])
-
-
-plt.plot(y_test)
-plt.plot(y_pred)
-
-
-_, y_test, _, y_pred = XGB_tuning_ud(X,data[["comments_lm_pos", "comments_lm_neg"]])
-
-_, y_test2, _, y_pred2 = XGB_tuning_ud(X)
-
-
-accuracy_score(y_test2, y_pred2)
-
-profit(y_test, y_pred)
-
