@@ -9,19 +9,16 @@ import numpy as np
 import datetime as dt
 
 import matplotlib.pyplot as plt
-data = pd.read_csv('GME_data.csv')
+data = pd.read_csv('D://Documents//ITMO//Year1//Course_project_github//Big_Data_course_project_2022//storage//GME_only_values.csv').drop('Unnamed: 0', axis = 1)
 data["date"] =  pd.to_datetime(data["date"])
 
 
 
 stock = data['Adj Close']
-
-
-
 date = data['date']
 
 
-days = mdates.(date)
+
 
 plt.figure(figsize=(12,6))
 plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
@@ -31,10 +28,9 @@ plt.yticks(size=18)
 plt.plot(date, stock, linewidth = 2)
 plt.ylabel('Value', size=20)
 plt.xlabel('Date', size=20)
-
 plt.grid(axis='both')
 plt.legend(fontsize=18)
-plt.savefig('plots/stock.png',dpi=300, format='png')
+plt.savefig('D://Documents//ITMO//Year1//Course_project_github//Big_Data_course_project_2022//plots//stock.png',dpi=300, format='png')
 plt.show()
 
 
