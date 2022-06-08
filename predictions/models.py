@@ -121,7 +121,7 @@ def LSTM_tuning(X,additional_data = None, lag = 30, layers = 2, train_ratio = 0.
 
 
 
-def LSTM_tuning_ud(X,additional_data = None, lag = 10, layers = 2, train_ratio = 0.7):
+def LSTM_tuning_ud(X,additional_data = None, lag = 10, epch = 1000, train_ratio = 0.7):
 
     scaler = MinMaxScaler(feature_range=(0,1))
     x = scaler.fit_transform(np.array(X).reshape(-1,1))
@@ -191,7 +191,7 @@ def LSTM_tuning_ud(X,additional_data = None, lag = 10, layers = 2, train_ratio =
     model.compile(loss='categorical_crossentropy',optimizer='adam',metrics = ['accuracy'])
     #model.summary()
     
-    model.fit(X_train_bin, y_train_bin, epochs=2000, verbose=1)
+    model.fit(X_train_bin, y_train_bin, epochs=epch, verbose=1)
     
     train_predict = model.predict(X_train_bin)
     
