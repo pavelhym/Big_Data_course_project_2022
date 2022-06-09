@@ -1,5 +1,6 @@
 path = 'GME_with_comments_groupped_text'
 
+import hashlib
 
 from pyspark.sql import SparkSession
 from pyspark import SparkConf
@@ -56,13 +57,23 @@ def cleaning(x):
   # tweet = [w for w in tweet if w in eng_words or not w.isalpha()]
   x=[stemmer.stem(word) for word in x if (word not in stop_words)]
   # tweet=[lemm.lemmatize(word) for word in tweet if (word not in stop_words)]
-
   return ' '.join(x)
 
 cleaning_udf = F.udf( lambda x: cleaning(x), returnType=Ts.StringType() )
 
 
 data2 = data.withColumn( 'proc_comments', cleaning_udf('comments') )
+data2.show()
+
+
+def hashing(x):
+  hashed_string = hash(x)
+  return hashed_string
+
+hashing_udf = F.udf( lambda x: hashing(x), returnType=Ts.FloatType())
+
+
+data2 = data2.withColumn( 'hash', hashing_udf('comments') )
 data2.show()
 
 
